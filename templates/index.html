@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Codebase Search - Upload</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 RAG Codebase Search</h1>
+            <p>Upload your repomix codebase to enable intelligent search</p>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                <div class="flash-message {% if 'error' in message.lower() %}error{% else %}success{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <div class="upload-section">
+                <div class="upload-card">
+                    <h2>📁 Upload Codebase</h2>
+                    <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data"
+                        class="upload-form">
+                        <div class="file-input-wrapper">
+                            <input type="file" name="file" id="file-input" accept=".txt,.md,.json" required>
+                            <label for="file-input" class="file-input-label">
+                                <span class="file-icon">📄</span>
+                                <span class="file-text">Choose file or drag and drop</span>
+                                <span class="file-subtitle">Supports .txt, .md, .json files (max 16MB)</span>
+                            </label>
+                        </div>
+                        <div class="file-info" id="file-info" style="display: none;">
+                            <span id="file-name"></span>
+                            <button type="button" class="remove-file" id="remove-file">×</button>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="upload-btn" disabled>
+                            <span class="btn-text">Upload & Process</span>
+                            <span class="btn-loader" style="display: none;">Processing...</span>
+                        </button>
+                    </form>
+                </div>
+
+                <br>
+
+                <div class="info-section">
+                    <h3>📋 What is this?</h3>
+                    <p>This tool uses RAG (Retrieval-Augmented Generation) to help you search through your codebase
+                        using natural language queries.</p>
+
+                    <h3>🚀 How to use</h3>
+                    <ol>
+                        <li>Generate a repomix of your codebase</li>
+                        <li>Upload the file using the form above</li>
+                        <li>Ask questions about your code in natural language</li>
+                    </ol>
+
+                    <h3>💡 Example queries</h3>
+                    <ul class="example-queries">
+                        <li>"How does the authentication system work?"</li>
+                        <li>"Where is the database connection configured?"</li>
+                        <li>"Show me the error handling implementation"</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by LangChain + OpenAI + FAISS</p>
+        </footer>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const fileLabel = document.querySelector('.file-input-label');
+        const fileText = document.querySelector('.file-text');
+        const fileInfo = document.getElementById('file-info');
+        const fileName = document.getElementById('file-name');
+        const removeFile = document.getElementById('remove-file');
+        const uploadBtn = document.getElementById('upload-btn');
+
+        fileInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileName.textContent = file.name;
+                fileInfo.style.display = 'flex';
+                fileText.textContent = file.name;
+                uploadBtn.disabled = false;
+            }
+        });
+
+        removeFile.addEventListener('click', function () {
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            fileText.textContent = 'Choose file or drag and drop';
+            uploadBtn.disabled = true;
+        });
+
+        // Drag and drop functionality
+        const dropZone = document.querySelector('.file-input-wrapper');
+
+        dropZone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const validTypes = ['.txt', '.md', '.json'];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+                if (validTypes.includes(fileExtension) && file.size <= 16 * 1024 * 1024) {
+                    fileInput.files = files;
+                    const event = new Event('change', { bubbles: true });
+                    fileInput.dispatchEvent(event);
+                } else {
+                    alert('Please upload a valid file (.txt, .md, .json) under 16MB');
+                }
+            }
+        });
+
+        // Show loader during upload
+        document.querySelector('.upload-form').addEventListener('submit', function () {
+            document.querySelector('.btn-text').style.display = 'none';
+            document.querySelector('.btn-loader').style.display = 'inline-block';
+            uploadBtn.disabled = true;
+        });
+    </script>
+</body>
+
+</html>

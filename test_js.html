@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test</title>
+</head>
+<body>
+    <div id="test">Testing...</div>
+    
+    <script>
+        try {
+            // Test basic JavaScript functionality
+            const testDiv = document.getElementById('test');
+            testDiv.textContent = 'JavaScript is working';
+            console.log('JavaScript loaded successfully');
+            
+            // Test function definition
+            function testFunction() {
+                return 'test';
+            }
+            
+            console.log('Function test:', testFunction());
+            
+        } catch (error) {
+            console.error('JavaScript error:', error);
+            document.body.innerHTML += '<div style="color: red;">Error: ' + error.message + '</div>';
+        }
+    </script>
+</body>
+</html>

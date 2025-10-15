@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Codebase Chat - Query</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>💬 RAG Codebase Chat</h1>
+            <p>Chat with your uploaded codebase using AI</p>
+            <div id="model-info" class="model-info" style="display: none;">
+                <span id="model-badge"></span>
+            </div>
+            <div class="nav-buttons">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">← Upload New File</a>
+                <a href="{{ url_for('reset') }}" class="btn btn-danger">🔄 Reset</a>
+            </div>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                <div class="flash-message {% if 'error' in message.lower() %}error{% else %}success{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <div class="chat-section">
+                <div class="chat-card">
+                    <div class="chat-container">
+                        <div class="chat-header">
+                            <h2>💬 Chat with your Codebase</h2>
+                            <div class="chat-actions">
+                                <button id="clear-chat" class="btn btn-outline">Clear Chat</button>
+                                <button id="upload-new-file" class="btn btn-primary">Upload New File</button>
+                            </div>
+                        </div>
+
+                        <div id="chat-messages" class="chat-messages">
+                            <div class="welcome-message">
+                                <div class="message assistant-message">
+                                    <div class="message-content">
+                                        <p>👋 Hi! I'm here to help you explore your codebase. Ask me anything about the
+                                            uploaded code!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-input-container">
+                            <form id="chat-form" class="chat-form">
+                                <div class="chat-input-wrapper">
+                                    <textarea id="chat-input" class="chat-input"
+                                        placeholder="Ask about your codebase..." rows="10" autocomplete="off"
+                                        required></textarea>
+                                    <button type="submit" class="send-btn" id="send-btn">
+                                        <span class="send-icon">➤</span>
+                                    </button>
+                                </div>
+                            </form>
+                            <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                                <span>🤔 AI is thinking...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <footer>
+            <p>Powered by LangChain + FAISS</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-scss.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-ruby.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-rust.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-swift.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-kotlin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-xml.min.js"></script>
+    <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        // Robust Mermaid setup with better error handling
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof mermaid !== 'undefined') {
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: 'default',
+                    securityLevel: 'loose',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    fontSize: 16,
+                    flowchart: {
+                        useMaxWidth: true,
+                        htmlLabels: true,
+                        curve: 'basis'
+                    }
+                });
+
+                // Enhanced Mermaid rendering function
+                window.renderMermaidDiagrams = function () {
+                    const mermaidElements = document.querySelectorAll('.mermaid');
+                    console.log(`Processing ${mermaidElements.length} Mermaid diagrams`);
+
+                    mermaidElements.forEach(async (element, index) => {
+                        try {
+                            // Get and clean the diagram code
+                            let diagramCode = element.textContent || element.innerText || '';
+
+                            // Clean up common issues
+                            diagramCode = diagramCode
+                                .replace(/&lt;/g, '<')
+                                .replace(/&gt;/g, '>')
+                                .replace(/&amp;/g, '&')
+                                .replace(/<br>/g, '\n')
+                                .replace(/<br\/>/g, '\n')
+                                .replace(/\n\s*\n/g, '\n')  // Remove extra blank lines
+                                .trim();
+
+                            if (!diagramCode) {
+                                console.warn('Empty Mermaid diagram found, skipping');
+                                element.style.display = 'none';
+                                return;
+                            }
+
+                            console.log(`Rendering Mermaid ${index}:`, diagramCode.substring(0, 100) + '...');
+
+                            // Clear element and render
+                            element.innerHTML = '';
+                            const uniqueId = 'mermaid-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+                            const { svg } = await mermaid.render(uniqueId, diagramCode);
+                            element.innerHTML = `<div class="mermaid-svg-container">${svg}</div>`;
+                            element.classList.add('mermaid-rendered');
+
+                            console.log(`Mermaid ${index} rendered successfully`);
+
+                        } catch (error) {
+                            console.error(`Mermaid ${index} failed:`, error);
+                            const code = element.textContent || '';
+                            element.innerHTML = `
+                                <div class="mermaid-error">
+                                    <strong>⚠️ Mermaid Diagram Error</strong><br>
+                                    ${error.message}
+                                    <details style="margin-top: 10px;">
+                                        <summary>View Original Code</summary>
+                                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto; margin-top: 5px;">${code}</pre>
+                                    </details>
+                                </div>
+                            `;
+                        }
+                    });
+                };
+
+                console.log('Mermaid initialized with enhanced rendering');
+            } else {
+                console.error('Mermaid library not loaded');
+            }
+        });
+    </script>
+    <script>
+        // Chat interface variables
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatMessages = document.getElementById('chat-messages');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const clearChatBtn = document.getElementById('clear-chat');
+        const uploadNewFileBtn = document.getElementById('upload-new-file');
+
+        // Conversation history
+        let conversationHistory = [];
+        let messageIdCounter = 0;
+
+        // Handle chat form submission
+        chatForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('Chat form submitted');
+
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            console.log('Sending message:', message);
+            await sendMessage(message);
+        });
+
+        // Handle textarea auto-resize
+        chatInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Handle Enter key for sending (Shift+Enter for new line)
+        chatInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Clear chat
+        clearChatBtn.addEventListener('click', function () {
+            if (confirm('Are you sure you want to clear the chat history?')) {
+                conversationHistory = [];
+                loadChatHistory();
+                chatInput.focus();
+            }
+        });
+
+        // Upload new file
+        uploadNewFileBtn.addEventListener('click', function () {
+            window.location.href = '/';
+        });
+
+        async function sendMessage(message) {
+            console.log('sendMessage called with:', message);
+
+            // Add user message to UI
+            addMessage('user', message);
+
+            // Clear input
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+
+            // Show typing indicator
+            typingIndicator.style.display = 'block';
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+
+            console.log('Input disabled:', chatInput.disabled);
+            console.log('Button disabled:', sendBtn.disabled);
+
+            try {
+                // Send to server with conversation history
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: message,
+                        history: conversationHistory.slice(-10) // Send last 10 messages for context
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Add assistant response to UI and history
+                    addMessage('assistant', data.answer);
+                    conversationHistory.push({ role: 'user', content: message });
+                    conversationHistory.push({ role: 'assistant', content: data.answer });
+                } else {
+                    addMessage('error', data.error || 'Failed to get response');
+                }
+            } catch (error) {
+                addMessage('error', 'Network error: ' + error.message);
+            } finally {
+                // Hide typing indicator
+                typingIndicator.style.display = 'none';
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+
+                console.log('Input re-enabled:', !chatInput.disabled);
+                console.log('Button re-enabled:', !sendBtn.disabled);
+            }
+        }
+
+        function formatAnswer(answer) {
+            // First, unescape any HTML entities that might be in the original answer
+            let unescaped = answer
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;/g, '&')
+                .replace(/&quot;/g, '"')
+                .replace(/&#x27;/g, "'");
+
+            // Convert markdown-like formatting to HTML (but NOT in mermaid blocks)
+            let formatted = unescaped;
+
+            // Handle Mermaid diagrams FIRST - protect them from other formatting
+            const mermaidBlocks = [];
+            formatted = formatted.replace(/```mermaid\n([\s\S]*?)```/g, function (match, diagramCode) {
+                const blockId = 'MERMAID_BLOCK_' + mermaidBlocks.length;
+                mermaidBlocks.push(diagramCode.trim());
+                return blockId;
+            });
+
+            // Now apply other formatting (won't affect mermaid blocks)
+            formatted = formatted
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>');
+
+            // Restore mermaid blocks with proper formatting
+            mermaidBlocks.forEach((code, index) => {
+                const blockId = 'MERMAID_BLOCK_' + index;
+
+                // Clean up the mermaid code for proper rendering
+                let cleanCode = code
+                    .replace(/<br>/g, '\n')
+                    .replace(/<br\/>/g, '\n')
+                    .replace(/\n\s*\n/g, '\n')  // Remove extra blank lines
+                    .trim();
+
+                formatted = formatted.replace(blockId, `<div class="mermaid">${cleanCode}</div>`);
+            });
+
+            // Handle other code blocks (but exclude mermaid blocks which are already processed)
+            formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, function (match, language, code) {
+                const lang = language || 'text';
+                return `<pre><code class="language-${lang}">${escapeHtml(code.trim())}</code></pre>`;
+            });
+
+            // Handle paragraphs and line breaks (be careful with mermaid blocks)
+            const tempMermaidBlocks = [];
+            formatted = formatted.replace(/<div class="mermaid">[\s\S]*?<\/div>/g, function (match) {
+                const blockId = 'TEMP_MERMAID_' + tempMermaidBlocks.length;
+                tempMermaidBlocks.push(match);
+                return blockId;
+            });
+
+            formatted = formatted.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+
+            // Restore mermaid blocks
+            tempMermaidBlocks.forEach((block, index) => {
+                const blockId = 'TEMP_MERMAID_' + index;
+                formatted = formatted.replace(blockId, block);
+            });
+
+            // Wrap in paragraphs if needed
+            if (!formatted.startsWith('<p>') && !formatted.includes('<div class="mermaid">')) {
+                formatted = '<p>' + formatted + '</p>';
+            }
+
+            return formatted;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Focus on input when page loads
+        chatInput.focus();
+
+        // Chat message functions
+        function addMessage(type, content) {
+            const messageId = 'message-' + (++messageIdCounter);
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.id = messageId;
+
+            if (type === 'user') {
+                messageDiv.classList.add('user-message');
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'message-avatar';
+                avatarDiv.textContent = '👤';
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                const paragraph = document.createElement('p');
+                paragraph.textContent = content;
+
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-time';
+                timeDiv.textContent = new Date().toLocaleTimeString();
+
+                contentDiv.appendChild(paragraph);
+                contentDiv.appendChild(timeDiv);
+
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(contentDiv);
+
+            } else if (type === 'assistant') {
+                messageDiv.classList.add('assistant-message');
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'message-avatar';
+                avatarDiv.textContent = '🤖';
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.innerHTML = formatAnswer(content);
+
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-time';
+                timeDiv.textContent = new Date().toLocaleTimeString();
+
+                contentDiv.appendChild(timeDiv);
+
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(contentDiv);
+
+            } else if (type === 'error') {
+                messageDiv.classList.add('error-message');
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'message-avatar';
+                avatarDiv.textContent = '❌';
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-content';
+                errorDiv.innerHTML = '<strong>Error:</strong> ' + content;
+                contentDiv.appendChild(errorDiv);
+
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-time';
+                timeDiv.textContent = new Date().toLocaleTimeString();
+
+                contentDiv.appendChild(timeDiv);
+
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(contentDiv);
+            }
+
+            // Remove welcome message if this is the first real message
+            const welcomeMessage = chatMessages.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Render Mermaid if present
+            if (type === 'assistant' && window.renderMermaidDiagrams) {
+                setTimeout(function () {
+                    window.renderMermaidDiagrams();
+                }, 100);
+            }
+        }
+
+
+        // Remove welcome message if this is the first real message
+        const welcomeMessage = chatMessages.querySelector('.welcome-message');
+        if (welcomeMessage) {
+            welcomeMessage.remove();
+        }
+
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Render Mermaid if present
+        if (type === 'assistant' && window.renderMermaidDiagrams) {
+            setTimeout(() => {
+                window.renderMermaidDiagrams();
+            }, 100);
+        }
+
+        function loadChatHistory() {
+            // Clear messages except welcome
+            const messages = chatMessages.querySelectorAll('.message');
+            messages.forEach(msg => msg.remove());
+
+            // Reload conversation history
+            conversationHistory.forEach(msg => {
+                addMessage(msg.role === 'user' ? 'user' : 'assistant', msg.content);
+            });
+        }
+
+        // Load and display model configuration
+        async function loadModelConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+
+                const modelInfo = document.getElementById('model-info');
+                const modelBadge = document.getElementById('model-badge');
+
+                if (config.model_info && config.model_info.type !== 'Not Configured') {
+                    modelInfo.style.display = 'block';
+                    modelBadge.className = 'model-badge';
+
+                    let badgeText = '';
+                    let badgeClass = '';
+
+                    if (config.model_info.type === 'Local') {
+                        badgeText = '🏠 Fully Local: ' + config.model_info.llm + ' + ' + config.model_info.embeddings;
+                        badgeClass = 'local';
+                    } else if (config.model_info.type === 'Hybrid Local') {
+                        badgeText = '🔀 Hybrid Local: ' + config.model_info.llm + ' + ' + config.model_info.embeddings;
+                        badgeClass = 'hybrid-local';
+                    } else if (config.model_info.type === 'Hybrid') {
+                        badgeText = '🤖 Hybrid: Cursor LLM + OpenAI Embeddings';
+                        badgeClass = 'hybrid';
+                    } else if (config.model_info.type === 'OpenAI Only') {
+                        badgeText = '🚀 OpenAI: LLM + Embeddings';
+                        badgeClass = 'openai';
+                    } else {
+                        badgeText = '⚠️ Not Configured';
+                        badgeClass = 'not-configured';
+                    }
+
+                    modelBadge.textContent = badgeText;
+                    modelBadge.classList.add(badgeClass);
+                }
+            } catch (error) {
+                console.error('Failed to load model configuration:', error);
+            }
+        }
+
+        // Load configuration when page loads
+        loadModelConfig();
+    </script>
+</body>
+
+</html>
