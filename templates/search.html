@@ -470,23 +470,6 @@
             }
         }
 
-
-        // Remove welcome message if this is the first real message
-        const welcomeMessage = chatMessages.querySelector('.welcome-message');
-        if (welcomeMessage) {
-            welcomeMessage.remove();
-        }
-
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        // Render Mermaid if present
-        if (type === 'assistant' && window.renderMermaidDiagrams) {
-            setTimeout(() => {
-                window.renderMermaidDiagrams();
-            }, 100);
-        }
-
         function loadChatHistory() {
             // Clear messages except welcome
             const messages = chatMessages.querySelectorAll('.message');
